@@ -26,6 +26,9 @@ devices/**/*credentials*
 .idea/
 *.code-workspace
 
+# Claude Code — local permission grants and machine-specific settings
+.claude/settings.local.json
+
 # macOS
 .DS_Store
 .AppleDouble
