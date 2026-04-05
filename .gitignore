@@ -1,0 +1,41 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Build output
+build/
+*.bin
+*.elf
+*.hex
+*.uf2
+*.map
+
+# Secrets and certificates — never commit
+secrets/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+devices/**/*secrets*
+devices/**/*credentials*
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python (PlatformIO tooling)
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Logs
+*.log
