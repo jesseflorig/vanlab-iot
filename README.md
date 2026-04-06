@@ -1,4 +1,4 @@
-# vanlab-iot
+# Vanlab IoT
 
 A framework for building secure, modular MQTT clients on PoE RP2040 devices. Devices are
 fully configurable via YAML, integrate with Home Assistant out of the box via MQTT
