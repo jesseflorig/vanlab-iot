@@ -1,0 +1,51 @@
+# example.yml — Vanlab IoT device definition
+#
+# This file is processed by scripts/gen_config.py at build time to produce
+# src/generated_config.h. Copy and rename for each physical device.
+#
+# Board: Silicognition RP2040-Shim + FeatherWing PoE
+
+device:
+  id:    van_light_01
+  name:  "Van Main Light"
+  board: silicognition_rp2040_shim
+
+mqtt:
+  broker_host:       mqtts.example.com
+  broker_port:       8883
+  client_id:         van_light_01
+  keepalive_s:       60
+  socket_timeout_s:  15
+  topic_root:        vanlab/van_light_01
+
+# ── Bundles (use-case profiles) ───────────────────────────────────────────────
+
+bundles:
+  - type:  light
+    id:    main_light
+    name:  "Main Light"
+    topic_prefix: light
+    modules:
+      - type: dimmer
+        id:   dimmer
+        name: "Dimmer"
+        gpio:
+          pins:  [9]
+          roles: [control]
+
+      - type: physical_switch
+        id:   switch
+        name: "Physical Switch"
+        gpio:
+          pins:  [10]
+          roles: [input]
+
+# ── Standalone modules ────────────────────────────────────────────────────────
+
+standalone_modules:
+  - type: status_led
+    id:   status_led
+    name: "Status LED"
+    gpio:
+      pins:  [25]   # onboard LED on Silicognition RP2040-Shim
+      roles: [indicator]

@@ -1,0 +1,7 @@
+{
+  "mqtt_username": "your_mqtt_user",
+  "mqtt_password": "your_mqtt_password",
+  "ca_cert_path": "/certs/ca.crt",
+  "client_cert_path": "",
+  "client_key_path": ""
+}
