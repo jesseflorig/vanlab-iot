@@ -106,4 +106,4 @@ A developer assigns the onboard NeoPixel pin as a `status_led` module in their d
 - The simple red LED on the Adafruit Feather RP2040 (GPIO 13) is not used as the primary status indicator in this feature; the onboard NeoPixel is preferred.
 - LiPo battery and USB charging behaviors of the Adafruit Feather are out of scope.
 - Only the Adafruit Feather RP2040 is in scope for new board support; other Feather-form-factor MCUs (Feather M0, Feather ESP32, etc.) are not addressed.
-- The PlatformIO board identifier for the Adafruit Feather RP2040 is `adafruit_feather_rp2040` (standard earlephilhower platform registry).
+- The PlatformIO board identifier for the Adafruit Feather RP2040 is `adafruit_feather` (maxgerhardt raspberrypi platform registry). The YAML `board:` field uses the more descriptive `adafruit_feather_rp2040` — these two values are intentionally different; the YAML value is for pin-set selection and human clarity, not the PIO registry ID.

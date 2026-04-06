@@ -121,7 +121,7 @@ standalone_modules:
 | Key | Value |
 |-----|-------|
 | platform | `https://github.com/maxgerhardt/platform-raspberrypi.git` |
-| board | `adafruit_feather_rp2040` |
+| board | `adafruit_feather` |
 | board_build.core | `earlephilhower` |
 | board_build.filesystem_size | `1m` |
 | lib_deps | PubSubClient + ESP_SSLClient + ArduinoJson + **Adafruit NeoPixel** |

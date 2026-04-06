@@ -60,7 +60,7 @@ standalone_modules:
 pio run -e feather_rp2040
 ```
 
-The `feather_rp2040` environment targets `adafruit_feather_rp2040` via the maxgerhardt raspberrypi platform. The W5500 is initialized on SPI1 (SCK=18, MOSI=19, MISO=20, CS=10, INT=12) automatically — no YAML configuration required.
+The `feather_rp2040` environment targets board `adafruit_feather` in the maxgerhardt raspberrypi platform (the YAML `board:` field uses `adafruit_feather_rp2040` for pin validation — this is intentionally different from the PlatformIO board ID). The W5500 is initialized on SPI1 (SCK=18, MOSI=19, MISO=20, CS=10, INT=12) automatically — no YAML configuration required.
 
 ---
 
