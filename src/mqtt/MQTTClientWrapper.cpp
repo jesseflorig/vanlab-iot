@@ -2,7 +2,7 @@
 
 // Arduino-hardware-specific includes — excluded from native build via build_src_filter
 #include <Arduino.h>
-#include <Ethernet.h>
+#include <WiFiClient.h>
 #include <ESP_SSLClient.h>
 #include <PubSubClient.h>
 
@@ -11,14 +11,13 @@
 #if __has_include("../config/trust_anchors.h")
 #include "../config/trust_anchors.h"
 #else
-// Placeholder until gen_certs.py has been run
-const br_x509_trust_anchor TAs[0] = {};
-const int TAs_NUM = 0;
+// Placeholder until gen_certs.py has been run — TLS verification disabled
+const char CA_CERT_PEM[] = "";
 #endif
 
-static EthernetClient  _ethClient;
-static ESP_SSLClient   _sslClient;
-static PubSubClient    _mqttClient;
+static WiFiClient    _ethClient;
+static ESP_SSLClient _sslClient;
+static PubSubClient  _mqttClient;
 
 MQTTClientWrapper::MQTTClientWrapper(const DeviceConfig& cfg, const RuntimeConfig& rt)
     : _cfg(cfg)
@@ -32,8 +31,13 @@ MQTTClientWrapper::MQTTClientWrapper(const DeviceConfig& cfg, const RuntimeConfi
 {}
 
 void MQTTClientWrapper::begin() {
-    _sslClient.setClient(_ethClient);
-    _sslClient.setTrustAnchors(TAs, TAs_NUM);
+    _sslClient.setClient(&_ethClient);
+    if (CA_CERT_PEM[0] != '\0') {
+        static X509List ta(CA_CERT_PEM);
+        _sslClient.setTrustAnchors(&ta);
+    } else {
+        _sslClient.setInsecure();
+    }
     _mqttClient.setClient(_sslClient);
     _mqttClient.setServer(_cfg.mqtt.broker_host, _cfg.mqtt.broker_port);
     _mqttClient.setKeepAlive(_cfg.mqtt.keepalive_s > 0 ? _cfg.mqtt.keepalive_s : 60);
@@ -142,6 +146,6 @@ void MQTTClientWrapper::onReconnect(ReconnectCallback cb, void* context) {
     _reconnectCtx = context;
 }
 
-void MQTTClientWrapper::setMessageCallback(void (*callback)(const char*, uint8_t*, unsigned int)) {
+void MQTTClientWrapper::setMessageCallback(void (*callback)(char*, uint8_t*, unsigned int)) {
     _mqttClient.setCallback(callback);
 }

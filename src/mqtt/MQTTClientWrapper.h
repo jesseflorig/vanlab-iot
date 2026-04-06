@@ -4,11 +4,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// Forward-declare Arduino library types so this header compiles on native
-#ifndef ARDUINO
-struct EthernetClient {};
-#endif
-
 /**
  * MQTTClientWrapper — MQTTS connectivity with offline state buffering.
  *
@@ -51,7 +46,7 @@ public:
     // before the StateBuffer is drained.
     void onReconnect(ReconnectCallback cb, void* context);
 
-    void setMessageCallback(void (*callback)(const char*, uint8_t*, unsigned int));
+    void setMessageCallback(void (*callback)(char*, uint8_t*, unsigned int));
 
     // Expose backoff state for testing
     uint32_t currentBackoffMs() const { return _backoffMs; }

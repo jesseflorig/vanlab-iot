@@ -1,163 +1,55 @@
 """
-gen_certs.py — Convert PEM certificates to BearSSL trust anchor C header.
+gen_certs.py — Embed a PEM CA certificate as a C string for ESP_SSLClient (RP2040).
 
 Reads one or more PEM certificate files and generates
-src/trust_anchors.h containing a BearSSL-compatible trust anchor array
-for use with ESP_SSLClient.
+src/config/trust_anchors.h containing the certificate(s) as a C string
+suitable for constructing a BearSSL X509List.
 
 Usage:
     python scripts/gen_certs.py certs/ca.crt [certs/intermediate.crt ...]
 
 Output:
-    src/trust_anchors.h
+    src/config/trust_anchors.h
 
 The generated header defines:
-    static const br_x509_trust_anchor TRUST_ANCHORS[];
-    static const size_t               TRUST_ANCHORS_COUNT;
+    const char CA_CERT_PEM[];
 
-Requirements:
-    pip install cryptography
-
-Example platformio.ini integration:
-    extra_scripts = pre:scripts/gen_certs.py
-    (or run manually before building)
+MQTTClientWrapper uses CA_CERT_PEM to construct an X509List for TLS verification.
+If this file is absent or CA_CERT_PEM is empty, the firmware falls back to
+setInsecure() (no certificate verification — development only).
 """
 
 import os
 import sys
-import textwrap
-
-
-def pem_to_der(pem_text):
-    """Decode a PEM-encoded certificate to DER bytes."""
-    import base64
-    lines = pem_text.strip().splitlines()
-    b64 = "".join(
-        l for l in lines
-        if not l.startswith("-----")
-    )
-    return base64.b64decode(b64)
-
-
-def der_to_trust_anchor(der_bytes, label):
-    """
-    Parse DER cert and emit a br_x509_trust_anchor struct initializer.
-    Uses the cryptography library to extract the public key and DN.
-    """
-    try:
-        from cryptography import x509
-        from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-        from cryptography.hazmat.primitives.asymmetric import rsa, ec
-    except ImportError:
-        print("[gen_certs] 'cryptography' package not found.")
-        print("            Install with: pip install cryptography")
-        sys.exit(1)
-
-    cert = x509.load_der_x509_certificate(der_bytes)
-
-    # Distinguished Name (DER-encoded)
-    dn_der = cert.subject.public_bytes()
-    dn_hex = ", ".join(f"0x{b:02x}" for b in dn_der)
-
-    # Public key
-    pub = cert.public_key()
-
-    if isinstance(pub, rsa.RSAPublicKey):
-        pub_nums = pub.public_numbers()
-        n_bytes  = pub_nums.n.to_bytes((pub_nums.n.bit_length() + 7) // 8, "big")
-        e_bytes  = pub_nums.e.to_bytes((pub_nums.e.bit_length() + 7) // 8, "big")
-        n_hex    = ", ".join(f"0x{b:02x}" for b in n_bytes)
-        e_hex    = ", ".join(f"0x{b:02x}" for b in e_bytes)
-        key_type = "BR_KEYTYPE_RSA"
-        key_body = textwrap.dedent(f"""\
-            .key = {{
-                .rsa = {{
-                    .n     = (unsigned char[]){{{n_hex}}},
-                    .nlen  = {len(n_bytes)},
-                    .e     = (unsigned char[]){{{e_hex}}},
-                    .elen  = {len(e_bytes)},
-                }},
-            }},""")
-    elif isinstance(pub, ec.EllipticCurvePublicKey):
-        pub_bytes = pub.public_bytes(Encoding.X962,
-                                     PublicFormat.UncompressedPoint)
-        q_hex     = ", ".join(f"0x{b:02x}" for b in pub_bytes)
-        # Map curve to BearSSL curve ID
-        curve_map = {
-            "secp256r1": "BR_EC_secp256r1",
-            "secp384r1": "BR_EC_secp384r1",
-            "secp521r1": "BR_EC_secp521r1",
-        }
-        curve_name = pub.curve.name
-        br_curve   = curve_map.get(curve_name, "BR_EC_secp256r1")
-        key_type   = "BR_KEYTYPE_EC"
-        key_body   = textwrap.dedent(f"""\
-            .key = {{
-                .ec = {{
-                    .curve = {br_curve},
-                    .q     = (unsigned char[]){{{q_hex}}},
-                    .qlen  = {len(pub_bytes)},
-                }},
-            }},""")
-    else:
-        print(f"[gen_certs] Unsupported key type in {label}")
-        sys.exit(1)
-
-    anchor = textwrap.dedent(f"""\
-        /* {label} */
-        {{
-            .dn  = {{
-                .data = (unsigned char[]){{{dn_hex}}},
-                .len  = {len(dn_der)},
-            }},
-            .flags   = {key_type},
-            {key_body}
-        }}""")
-    return anchor
 
 
 def generate_header(pem_files, output_path):
-    anchors = []
+    pem_blocks = []
     for pem_path in pem_files:
         if not os.path.exists(pem_path):
             print(f"[gen_certs] File not found: {pem_path}")
             sys.exit(1)
-
         with open(pem_path) as f:
-            pem_text = f.read()
+            pem_blocks.append(f.read().strip())
 
-        # A file may contain multiple PEM blocks (certificate chain)
-        blocks = []
-        current = []
-        for line in pem_text.splitlines():
-            current.append(line)
-            if line.strip() == "-----END CERTIFICATE-----":
-                blocks.append("\n".join(current))
-                current = []
+    combined_pem = "\n".join(pem_blocks)
 
-        for i, block in enumerate(blocks):
-            label = f"{os.path.basename(pem_path)}" + (f"[{i}]" if len(blocks) > 1 else "")
-            der   = pem_to_der(block)
-            anchors.append(der_to_trust_anchor(der, label))
+    # Escape for C string literal (backslash-n at line boundaries)
+    escaped = combined_pem.replace("\\", "\\\\").replace('"', '\\"')
+    c_lines  = '\n'.join(f'    "{line}\\n"' for line in escaped.splitlines())
 
-    anchors_body = ",\n".join(anchors)
     header = f"""\
 // trust_anchors.h — AUTO-GENERATED by scripts/gen_certs.py
-// DO NOT COMMIT private key material. This file contains public CA trust anchors only.
+// DO NOT COMMIT private key material. Contains public CA cert(s) only.
 #pragma once
-#include <bearssl/bearssl_x509.h>
 
-static const br_x509_trust_anchor TRUST_ANCHORS[] = {{
-{anchors_body}
-}};
-
-static const size_t TRUST_ANCHORS_COUNT =
-    sizeof(TRUST_ANCHORS) / sizeof(TRUST_ANCHORS[0]);
+static const char CA_CERT_PEM[] =
+{c_lines};
 """
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     with open(output_path, "w") as f:
         f.write(header)
-    print(f"[gen_certs] Generated {output_path} ({len(anchors)} trust anchor(s))")
+    print(f"[gen_certs] Generated {output_path} ({len(pem_files)} cert file(s))")
 
 
 if __name__ == "__main__":
@@ -165,5 +57,5 @@ if __name__ == "__main__":
         print(__doc__)
         sys.exit(0)
     pem_files   = sys.argv[1:]
-    output_path = os.path.join("src", "trust_anchors.h")
+    output_path = os.path.join("src", "config", "trust_anchors.h")
     generate_header(pem_files, output_path)

@@ -29,7 +29,7 @@ void  MQTTClientWrapper::loop()                                       {}
 bool  MQTTClientWrapper::publish(const char*, const char*, bool)      { return false; }
 bool  MQTTClientWrapper::subscribe(const char*)                       { return false; }
 void  MQTTClientWrapper::onReconnect(ReconnectCallback cb, void* ctx) { _reconnectCb = cb; _reconnectCtx = ctx; }
-void  MQTTClientWrapper::setMessageCallback(void (*)(const char*, uint8_t*, unsigned int)) {}
+void  MQTTClientWrapper::setMessageCallback(void (*)(char*, uint8_t*, unsigned int)) {}
 
 bool  MQTTClientWrapper::attemptConnect()                             { return false; }
 void  MQTTClientWrapper::onConnected()                                {}

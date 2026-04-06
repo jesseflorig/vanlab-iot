@@ -22,20 +22,23 @@ Edit `devices/my-device-01.yml`:
 device:
   id: my-device-01
   name: My Device
-  board: silicognition-rp2040-shim
+  board: silicognition_rp2040_shim
 
 mqtt:
   broker_host: homeassistant.local
   broker_port: 8883
-  keepalive: 60
+  client_id: my-device-01
+  keepalive_s: 60
+  socket_timeout_s: 15
   topic_root: vanlab/my-device-01
 
-modules:
+standalone_modules:
   - type: status_led
-    id: status
+    id: status_led
     name: Status LED
     gpio:
-      pin: 25
+      pins: [25]
+      roles: [indicator]
 ```
 
 ## 2. Provision Runtime Secrets
@@ -53,14 +56,15 @@ after first flash — see Step 5):
 
 ## 3. Provision TLS Certificate
 
-Export your broker's CA certificate in PEM format. Convert it to a BearSSL trust
-anchor header:
+Export your broker's CA certificate in PEM format and generate the trust anchor header:
 
 ```sh
-python scripts/gen_certs.py certs/ca.crt > src/config/trust_anchors.h
+python scripts/gen_certs.py certs/ca.crt
 ```
 
-This generates a `const br_x509_trust_anchor TAs[]` array compiled into firmware.
+This generates `src/config/trust_anchors.h` containing the CA cert as a PEM string
+(`CA_CERT_PEM`). Without this step, TLS verification is disabled at runtime (insecure
+mode — for development only).
 
 ## 4. Build
 
@@ -126,10 +130,10 @@ pio test --environment native
 
 ## Adding a Module
 
-1. Create `src/modules/<type>/<TypeModule>.h` implementing `IModule`
-2. Register the factory in `src/modules/ModuleRegistry.cpp`
-3. Add the `type` string to `contracts/device-config-schema.md`
-4. Write unit tests in `tests/unit/modules/test_<type>.cpp`
-5. Add the module to a device YAML config and rebuild
+1. Create `src/bundles/modules/<type>/<TypeModule>.h/.cpp` implementing `IModule`
+2. Register the module in your bundle's `setup()` or as a standalone in `src/main.cpp`
+3. Write unit tests in `tests/test_<type>/test_<type>.cpp`
+4. Add the module to a device YAML under `standalone_modules:` or a bundle's `modules:`
+5. Rebuild: `pio run -e rp2040_shim`
 
-See `contracts/module-interface.md` for the full module contract.
+See `include/IModule.h` for the module interface and `include/IBundle.h` for bundles.

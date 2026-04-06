@@ -1,5 +1,5 @@
 #include "LightBundle.h"
-#include "../../include/IGPIODriver.h"
+#include "../../../include/IGPIODriver.h"
 #include "../../mqtt/MQTTClientWrapper.h"
 #include "../../mqtt/HADiscoveryPayload.h"
 #include <stdio.h>

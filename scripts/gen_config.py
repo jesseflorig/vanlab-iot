@@ -15,25 +15,25 @@ Manual usage:
 import os
 import sys
 
-Import = None  # will be set by PlatformIO environment
-
 # ── PlatformIO integration ────────────────────────────────────────────────────
 
-try:
-    Import("env")
-    _in_pio = True
-except:
-    _in_pio = False
 
-
-def _get_device_file(env=None):
-    if env:
+def _get_device_file_from_env(env):
+    """Extract DEVICE_CONFIG_FILE from SCons BUILD_FLAGS if present."""
+    try:
         flags = env.get("BUILD_FLAGS", [])
-        for f in flags:
-            if "DEVICE_CONFIG_FILE" in f:
-                # e.g. -DDEVICE_CONFIG_FILE='"devices/example.yml"'
-                val = f.split("=", 1)[1].strip().strip('"').strip("'")
-                return val
+        if isinstance(flags, str):
+            flags = flags.split()
+        for f in (flags or []):
+            f = str(f)
+            if "DEVICE_CONFIG_FILE" in f and "=" in f:
+                val = f.split("=", 1)[1]
+                # Strip all surrounding/embedded quotes and whitespace
+                val = val.strip().strip("'").strip('"').strip("'").strip('"').strip()
+                if val and not val.startswith("-") and "/" in val:
+                    return val
+    except Exception:
+        pass
     return "devices/example.yml"
 
 
@@ -75,12 +75,11 @@ def gen_gpio_config(gpio):
 def gen_module_config(mod):
     gpio    = gen_gpio_config(mod.get("gpio", {}))
     params  = mod.get("params", {})
+    params  = mod.get("params", {})
     param_lines = []
     for k, v in (params.items() if isinstance(params, dict) else []):
         param_lines.append(f'{{"{k}", "{v}"}}')
     param_count = len(param_lines)
-    params_init = ", ".join(param_lines) if param_lines else ""
-    # Pad to MAX_MODULE_PARAMS (8)
     while len(param_lines) < 8:
         param_lines.append('{nullptr, nullptr}')
     params_init = ", ".join(param_lines)
@@ -93,7 +92,7 @@ def gen_module_config(mod):
         f"{c_str(mod.get('topic_prefix'))}, "
         f"{mod.get('poll_interval_ms', 0)}, "
         f"{gpio}, "
-        f"{{{params_init}}}, "
+        f"{{{params_init}}},"
         f"{param_count}"
         f"}}"
     )
@@ -104,7 +103,7 @@ def gen_bundle_config(bundle):
     mod_lines = [gen_module_config(m) for m in modules]
     # Pad to MAX_MODULES_PER_BUNDLE (8)
     while len(mod_lines) < 8:
-        mod_lines.append("{{nullptr, nullptr, nullptr, nullptr, 0, {{-1,-1,-1,-1},{nullptr,nullptr,nullptr,nullptr},0},{{{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr}},0}}")
+        mod_lines.append("{nullptr, nullptr, nullptr, nullptr, 0, {{-1,-1,-1,-1},{nullptr,nullptr,nullptr,nullptr},0},{{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr}},0}")
     mod_init = ",\n        ".join(mod_lines)
 
     params = bundle.get("params", {})
@@ -145,7 +144,7 @@ def generate_header(yaml_data, output_path):
 
     standalone_lines = [gen_module_config(m) for m in standalone]
     while len(standalone_lines) < 16:
-        standalone_lines.append("{nullptr, nullptr, nullptr, nullptr, 0, {{-1,-1,-1,-1},{nullptr,nullptr,nullptr,nullptr},0},{},0}")
+        standalone_lines.append("{nullptr, nullptr, nullptr, nullptr, 0, {{-1,-1,-1,-1},{nullptr,nullptr,nullptr,nullptr},0},{{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr},{nullptr,nullptr}},0}")
     standalone_init = ",\n    ".join(standalone_lines)
 
     header = f"""\
@@ -187,15 +186,6 @@ static const DeviceConfig DEVICE_CONFIG = {{
 
 # ── Entry points ──────────────────────────────────────────────────────────────
 
-def run_in_pio(env):
-    device_file = _get_device_file(env)
-    project_dir = env.subst("$PROJECT_DIR")
-    yaml_path   = os.path.join(project_dir, device_file)
-    output_path = os.path.join(project_dir, "src", "generated_config.h")
-    yaml_data   = load_yaml(yaml_path)
-    generate_header(yaml_data, output_path)
-
-
 def run_standalone(args):
     yaml_path   = args[0] if args else "devices/example.yml"
     output_path = os.path.join("src", "generated_config.h")
@@ -203,13 +193,18 @@ def run_standalone(args):
     generate_header(yaml_data, output_path)
 
 
-if _in_pio:
-    # Called by PlatformIO as a pre-script
-    env = None
-    try:
-        Import("env")  # noqa: F821
-        run_in_pio(env)
-    except Exception as e:
-        print(f"[gen_config] Warning: {e}")
-else:
+# When executed as a PlatformIO pre-script, SCons provides Import() as a
+# builtin. Import("env") injects the SCons Environment into local scope.
+# When run directly (python scripts/gen_config.py), Import is not defined.
+try:
+    Import("env")  # type: ignore  # noqa: F821
+    # Running as PlatformIO pre-script
+    project_dir = env["PROJECT_DIR"]          # type: ignore  # noqa: F821
+    device_file = _get_device_file_from_env(env)  # type: ignore  # noqa: F821
+    yaml_path   = os.path.join(project_dir, device_file)
+    output_path = os.path.join(project_dir, "src", "generated_config.h")
+    yaml_data   = load_yaml(yaml_path)
+    generate_header(yaml_data, output_path)
+except NameError:
+    # Running standalone
     run_standalone(sys.argv[1:])

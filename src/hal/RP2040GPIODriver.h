@@ -10,8 +10,8 @@
  */
 class RP2040GPIODriver : public IGPIODriver {
 public:
-    void     pinMode(uint8_t pin, uint8_t mode) override     { ::pinMode(pin, mode); }
-    void     digitalWrite(uint8_t pin, uint8_t val) override { ::digitalWrite(pin, val); }
+    void     pinMode(uint8_t pin, uint8_t mode) override     { ::pinMode(pin, (PinMode)mode); }
+    void     digitalWrite(uint8_t pin, uint8_t val) override { ::digitalWrite(pin, (PinStatus)val); }
     int      digitalRead(uint8_t pin) override               { return ::digitalRead(pin); }
     int      analogRead(uint8_t pin) override                { return ::analogRead(pin); }
     void     analogWrite(uint8_t pin, int val) override      { ::analogWrite(pin, val); }

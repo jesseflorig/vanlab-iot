@@ -1,5 +1,6 @@
 # Generated firmware config — produced by scripts/gen_config.py at build time
-src/config/generated_config.h
+src/generated_config.h
+# Generated TLS trust anchors — produced by scripts/gen_certs.py
 src/config/trust_anchors.h
 
 # PlatformIO

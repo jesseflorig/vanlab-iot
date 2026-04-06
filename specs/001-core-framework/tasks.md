@@ -132,7 +132,7 @@ description: "Task list for 001-core-framework"
 - [X] T040 [P] [US5] Write `tests/test_light_bundle/test_light_bundle.cpp` — SwitchPressed event causes dimmer.toggle(); handleCommand("128") sets dimmer to 128; handleCommand("OFF") sets dimmer to 0
 - [X] T041 [US5] Create `src/main.cpp` — Arduino entry point; instantiates Orchestrator with BundleRegistry + RP2040GPIODriver + MQTTClientWrapper; setup() loads RuntimeConfig, registers bundles, calls orchestrator.setup(); loop() calls orchestrator.loop()
 - [X] T042 [US5] Run `pio test -e native` — 62/62 tests pass across all 8 suites ✅
-- [ ] T043 [US5] Run `pio run -e rp2040_shim` — firmware compiles for target hardware without errors
+- [X] T043 [US5] Run `pio run -e rp2040_shim` — firmware compiles for target hardware without errors
 
 **Checkpoint**: US5 complete when T043 passes
 
@@ -140,7 +140,7 @@ description: "Task list for 001-core-framework"
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T044 Validate `quickstart.md` against actual build — run every command in quickstart.md on a clean checkout and confirm accuracy; update any steps that have drifted
+- [X] T044 Validate `quickstart.md` against actual build — run every command in quickstart.md on a clean checkout and confirm accuracy; update any steps that have drifted
 - [X] T045 [P] Update `README.md` project structure section to match actual `src/` layout
 
 ---
