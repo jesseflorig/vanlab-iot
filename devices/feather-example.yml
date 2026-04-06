@@ -1,0 +1,30 @@
+# feather-example.yml — Vanlab IoT device definition
+#
+# Reference configuration for Adafruit RP2040 Feather + Silicognition PoE FeatherWing.
+# Processed by scripts/gen_config.py at build time to produce src/generated_config.h.
+# Copy and rename for each physical device.
+#
+# Board: Adafruit RP2040 Feather + Silicognition PoE FeatherWing W5500
+
+device:
+  id:    van_feather_01
+  name:  "Van Feather"
+  board: adafruit_feather_rp2040
+
+mqtt:
+  broker_host:       mqtts.example.com
+  broker_port:       8883
+  client_id:         van_feather_01
+  keepalive_s:       60
+  socket_timeout_s:  15
+  topic_root:        vanlab/van_feather_01
+
+# ── Standalone modules ────────────────────────────────────────────────────────
+
+standalone_modules:
+  - type: neopixel_status
+    id:   neopixel_status
+    name: "Status"
+    gpio:
+      pins:  [16]   # onboard NeoPixel on Adafruit RP2040 Feather (internal, not on headers)
+      roles: [indicator]

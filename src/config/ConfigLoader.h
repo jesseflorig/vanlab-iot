@@ -17,6 +17,14 @@ public:
      */
     static bool parseFromJson(const char* json, RuntimeConfig& out);
 
+    /**
+     * Validate that all GPIO pins in the DeviceConfig are within the
+     * board's legal pin set (determined at compile time via build flags).
+     * Returns false if any pin is out of range for the target board.
+     * Always returns true on native builds (no board macro defined).
+     */
+    static bool validatePins(const DeviceConfig& cfg);
+
 #ifdef ARDUINO
     /**
      * Load RuntimeConfig from /config/runtime.json on LittleFS.

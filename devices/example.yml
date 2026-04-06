@@ -43,9 +43,9 @@ bundles:
 # ── Standalone modules ────────────────────────────────────────────────────────
 
 standalone_modules:
-  - type: status_led
-    id:   status_led
-    name: "Status LED"
+  - type: neopixel_status
+    id:   neopixel_status
+    name: "Status"
     gpio:
-      pins:  [25]   # onboard LED on Silicognition RP2040-Shim
+      pins:  [23]   # onboard NeoPixel on Silicognition RP2040-Shim
       roles: [indicator]

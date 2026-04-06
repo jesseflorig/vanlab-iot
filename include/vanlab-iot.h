@@ -11,6 +11,7 @@
 #include "IModule.h"
 #include "IBundle.h"
 #include "IGPIODriver.h"
+#include "INeoPixelDriver.h"
 
 // ── Configuration types ───────────────────────────────────────────────────────
 #include "../src/config/ConfigTypes.h"
@@ -18,6 +19,7 @@
 // ── HAL ───────────────────────────────────────────────────────────────────────
 #ifdef ARDUINO
 #include "../src/hal/RP2040GPIODriver.h"
+#include "../src/hal/RP2040NeoPixelDriver.h"
 #endif
 
 // ── Orchestrator ──────────────────────────────────────────────────────────────
@@ -39,3 +41,4 @@
 
 // ── Standalone modules ────────────────────────────────────────────────────────
 #include "../src/bundles/modules/status_led/StatusLEDModule.h"
+#include "../src/bundles/modules/neopixel/NeoPixelStatusModule.h"
