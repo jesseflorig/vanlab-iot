@@ -42,3 +42,4 @@
 // ── Standalone modules ────────────────────────────────────────────────────────
 #include "../src/bundles/modules/status_led/StatusLEDModule.h"
 #include "../src/bundles/modules/neopixel/NeoPixelStatusModule.h"
+#include "../src/bundles/modules/neopixel/NeoPixelLightModule.h"

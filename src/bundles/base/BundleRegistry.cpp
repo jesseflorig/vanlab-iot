@@ -31,6 +31,6 @@ void BundleRegistry::publishAllDiscovery(MQTTClientWrapper& mqtt) {
 }
 
 void BundleRegistry::resubscribeAll(MQTTClientWrapper& mqtt) {
-    for (int i = 0; i < _bundleCount; i++) _bundles[i]->resubscribe(mqtt);
-    // Standalone modules that need to subscribe do so in loop() after isConnected()
+    for (int i = 0; i < _bundleCount;     i++) _bundles[i]->resubscribe(mqtt);
+    for (int i = 0; i < _standaloneCount; i++) _standalone[i]->resubscribe(mqtt);
 }

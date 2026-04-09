@@ -34,6 +34,12 @@ public:
     virtual const char* getId() const               = 0;
     virtual const char* getAvailabilityTopic() const = 0;
 
+    // Re-subscribe to MQTT command topics after reconnection.
+    // Called by BundleRegistry::resubscribeAll() on every MQTT reconnect.
+    // Standalone modules override this to subscribe to their command topic.
+    // Bundle-owned modules: no-op (the bundle handles resubscription).
+    virtual void resubscribe(MQTTClientWrapper& mqtt) { (void)mqtt; }
+
     // Optional bus injection for bundle-owned modules that publish events.
     // Bundle calls this during its own setup() before calling module setup().
     // Standalone modules ignore it (default no-op).
