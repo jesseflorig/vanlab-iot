@@ -56,25 +56,30 @@ static RP2040GPIODriver gpio;
 
 static RuntimeConfig runtimeConfig;
 
-// ── Bundles & standalone modules ──────────────────────────────────────────────
-//
-// feather_rgb_light config: NeoPixelLightModule drives the onboard NeoPixel
-//   as a Home Assistant RGB light — no LightBundle, no status indicator.
-//
-// All other configs: LightBundle + NeoPixelStatusModule (original behaviour).
+// ── NeoPixel driver ───────────────────────────────────────────────────────────
 
 // NeoPixel driver — pin comes from first standalone module's GPIO config
 static RP2040NeoPixelDriver neoPixelDriver(
     (uint8_t)DEVICE_CONFIG.standalone_modules[0].gpio.pins[0]);
 
-#ifdef NEOPIXEL_LIGHT_MODE
-static NeoPixelLightModule neoPixelLight(
-    neoPixelDriver, DEVICE_CONFIG.standalone_modules[0], DEVICE_CONFIG);
-#else
-static LightBundle lightBundle(DEVICE_CONFIG.bundles[0], DEVICE_CONFIG);
-static NeoPixelStatusModule neoPixelStatus(
-    neoPixelDriver, DEVICE_CONFIG.standalone_modules[0], DEVICE_CONFIG);
-#endif
+// ── NeoPixel mode selection ───────────────────────────────────────────────────
+//
+// Operating mode is determined at runtime from the YAML device config rather
+// than a compile-time flag. A standalone module with type "neopixel_light"
+// activates NeoPixelLightModule (HA RGB light). All other values use
+// NeoPixelStatusModule + LightBundle (original behaviour).
+//
+// Bundles and modules are declared as function-local statics in setup() so
+// only the active branch is ever constructed.
+
+static bool isNeoPixelLightMode() {
+    return DEVICE_CONFIG.standalone_module_count > 0
+        && DEVICE_CONFIG.standalone_modules[0].type != nullptr
+        && strcmp(DEVICE_CONFIG.standalone_modules[0].type, "neopixel_light") == 0;
+}
+
+// Pointer set in setup() — used by loop() to update status LED state.
+static NeoPixelStatusModule* s_statusModule = nullptr;
 
 // ── Registry & Orchestrator ───────────────────────────────────────────────────
 
@@ -103,32 +108,38 @@ void setup() {
         while (true) delay(1000);
     }
 
-#ifdef NEOPIXEL_LIGHT_MODE
-    registry.registerModule(&neoPixelLight);
-    mqtt.setMessageCallback([](char* topic, uint8_t* payload, unsigned int len) {
-        (void)topic;  // only one subscribed topic in this config
-        neoPixelLight.handleCommand((const char*)payload, len);
-    });
-#else
-    registry.registerBundle(&lightBundle);
-    registry.registerModule(&neoPixelStatus);
-#endif
+    if (isNeoPixelLightMode()) {
+        static NeoPixelLightModule neoPixelLight(
+            neoPixelDriver, DEVICE_CONFIG.standalone_modules[0], DEVICE_CONFIG);
+        registry.registerModule(&neoPixelLight);
+        mqtt.setMessageCallback([](char* topic, uint8_t* payload, unsigned int len) {
+            (void)topic;  // only one subscribed topic in this config
+            neoPixelLight.handleCommand((const char*)payload, len);
+        });
+    } else {
+        static LightBundle lightBundle(DEVICE_CONFIG.bundles[0], DEVICE_CONFIG);
+        static NeoPixelStatusModule neoPixelStatus(
+            neoPixelDriver, DEVICE_CONFIG.standalone_modules[0], DEVICE_CONFIG);
+        s_statusModule = &neoPixelStatus;
+        registry.registerBundle(&lightBundle);
+        registry.registerModule(&neoPixelStatus);
+    }
 
     orchestrator.setup();
 }
 
 void loop() {
-#ifndef NEOPIXEL_LIGHT_MODE
-    // Reflect MQTT connection state on the onboard NeoPixel status indicator
-    switch (mqtt.state()) {
-        case MQTTClientWrapper::ConnState::Connected:
-            neoPixelStatus.setState(NeoPixelStatusModule::StatusState::Connected);
-            break;
-        default:
-            neoPixelStatus.setState(NeoPixelStatusModule::StatusState::Connecting);
-            break;
+    if (s_statusModule) {
+        // Reflect MQTT connection state on the onboard NeoPixel status indicator
+        switch (mqtt.state()) {
+            case MQTTClientWrapper::ConnState::Connected:
+                s_statusModule->setState(NeoPixelStatusModule::StatusState::Connected);
+                break;
+            default:
+                s_statusModule->setState(NeoPixelStatusModule::StatusState::Connecting);
+                break;
+        }
     }
-#endif
 
     orchestrator.loop();
 }

@@ -84,7 +84,7 @@ tests/
   test_light_bundle/              # LightBundle switch→toggle end-to-end
   test_neopixel_module/           # NeoPixelModule status indicator behaviour
   test_neopixel_light/            # NeoPixelLightModule HA RGB light behaviour
-platformio.ini                    # PlatformIO environments: rp2040_shim, feather_rp2040, feather_rgb_light, native
+platformio.ini                    # PlatformIO environments: rp2040_shim, feather_rp2040, native
 ```
 
 ## Getting Started
@@ -103,7 +103,8 @@ platformio.ini                    # PlatformIO environments: rp2040_shim, feathe
    |---|---|
    | `rp2040_shim` | Silicognition RP2040-Shim |
    | `feather_rp2040` | Adafruit RP2040 Feather |
-   | `feather_rgb_light` | Adafruit RP2040 Feather (NeoPixel as HA RGB light) |
+
+   NeoPixel operating mode (status indicator vs HA RGB light) is selected by the `type` field in the device YAML config — no separate environment needed.
 
    ```sh
    pio run --target upload --environment feather_rp2040

@@ -7,7 +7,7 @@
 
 - [PlatformIO Core CLI](https://platformio.org/install/cli) installed and on your PATH
 - For flashing: Adafruit RP2040 Feather connected via a USB-C data cable
-- For flashing: A valid device YAML config file in `devices/` (e.g., `devices/feather-example.yml` or `devices/feather-rgb-light.yml`)
+- For flashing: A valid device YAML config file in `devices/` (e.g., `devices/feather-example.yml` or `devices/feather-rgb-light.yml`; NeoPixel mode is set by the `type` field in the YAML — no separate environment needed)
 
 ---
 
@@ -23,19 +23,15 @@ All test suites in `tests/` are discovered and run automatically. Hardware-depen
 
 ## Flash Firmware to Feather
 
-Choose the environment that matches your device config:
+Use the `feather_rp2040` environment for all Feather builds. NeoPixel operating mode is determined by the `type` field in your device YAML config — no separate environment needed:
 
-| Environment       | When to use                                                   |
-|-------------------|---------------------------------------------------------------|
-| `feather_rp2040`  | Standard Feather — no NeoPixel light mode                     |
-| `feather_rgb_light` | Feather with NeoPixel as an HA-controllable RGB light       |
+| YAML `type` value | NeoPixel behavior |
+|---|---|
+| `neopixel_status` | Connection state indicator (default) |
+| `neopixel_light` | Home Assistant-controllable RGB light |
 
 ```sh
-# Standard Feather
 pio run --target upload --environment feather_rp2040
-
-# Feather with NeoPixel RGB light
-pio run --target upload --environment feather_rgb_light
 ```
 
 The pre-build script (`scripts/gen_config.py`) runs automatically and generates `src/generated_config.h` from the device YAML before compilation.
