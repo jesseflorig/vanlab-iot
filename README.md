@@ -69,6 +69,7 @@ src/
       dimmer/                     # DimmerModule — PWM output (bundle-owned)
       physical_switch/            # PhysicalSwitchModule — debounced digital input
       status_led/                 # StatusLEDModule — standalone blink indicator
+      neopixel/                   # NeoPixelModule — HA-controllable RGB NeoPixel
 tests/
   mocks/
     MockGPIODriver.h              # IGPIODriver test double (records all calls)
@@ -81,19 +82,33 @@ tests/
   test_config_loader/             # ConfigLoader JSON parsing
   test_status_led/                # StatusLEDModule blink behaviour
   test_light_bundle/              # LightBundle switch→toggle end-to-end
-platformio.ini                    # PlatformIO project config (rp2040_shim + native)
+  test_neopixel_module/           # NeoPixelModule status indicator behaviour
+  test_neopixel_light/            # NeoPixelLightModule HA RGB light behaviour
+platformio.ini                    # PlatformIO environments: rp2040_shim, feather_rp2040, feather_rgb_light, native
 ```
 
 ## Getting Started
 
 1. Install [PlatformIO](https://platformio.org/install/cli)
-2. Copy `devices/example.yml` to `devices/<your-device>.yml` and configure GPIO and MQTT
+2. Copy the appropriate device config template to `devices/<your-device>.yml` and configure
+   GPIO pins and MQTT settings
 3. Provision a TLS certificate for the device and reference it in the device config
-4. Build and flash:
+4. Run the native test suite (no hardware required):
    ```sh
-   pio run --target upload --environment rp2040
+   pio test --environment native
    ```
-5. Monitor serial output:
+5. Build and flash — choose the environment matching your hardware:
+
+   | Environment | Board |
+   |---|---|
+   | `rp2040_shim` | Silicognition RP2040-Shim |
+   | `feather_rp2040` | Adafruit RP2040 Feather |
+   | `feather_rgb_light` | Adafruit RP2040 Feather (NeoPixel as HA RGB light) |
+
+   ```sh
+   pio run --target upload --environment feather_rp2040
+   ```
+6. Monitor serial output (PlatformIO auto-detects the port; 115200 baud):
    ```sh
    pio device monitor
    ```
