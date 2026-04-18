@@ -16,6 +16,11 @@ LightBundle::LightBundle(const BundleConfig& cfg, const DeviceConfig& dev)
     , _dimmer(cfg.modules[0], dev)
     , _switch(cfg.modules[1], dev)
 {
+    // Guard against construction with an empty BundleConfig (cfg.type == nullptr).
+    // This can occur when a device has no bundles section; in that case the object
+    // is never registered and its methods are never called, so a no-op is safe.
+    if (!cfg.type || !cfg.id) return;
+
     snprintf(_availTopic, sizeof(_availTopic),
              "%s/availability", dev.mqtt.topic_root);
     snprintf(_stateTopic, sizeof(_stateTopic),

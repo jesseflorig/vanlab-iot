@@ -43,6 +43,8 @@ bundles:
 # ── Standalone modules ────────────────────────────────────────────────────────
 
 standalone_modules:
+  # type: neopixel_status — connection state indicator (default)
+  # type: neopixel_light  — Home Assistant-controllable RGB light (change type to switch modes)
   - type: neopixel_status
     id:   neopixel_status
     name: "Status"
